@@ -41,9 +41,11 @@ public class SubGraphShortestPath extends ServerPlugin {
     }
 
     private Boolean createSubGraph(GraphDatabaseService graphDb, GraphDatabaseService subDb, Map constraints) {
+        Transaction tx = graphDb.beginTx();
         try {
-            Transaction tx = graphDb.beginTx();
             Result result = graphDb.execute("MATCH (d1:ECODDomain)-[r:DISTANCE]-(d2:ECODDomain) WHERE r.rmsd <= 3 AND r.length >= 30 AND r.psim >= 30 return DISTINCT d1 AS domain, r AS distance;");
+        } catch ( QueryExecutionException e ) {
+            return false;
         }
         return false;
     }
