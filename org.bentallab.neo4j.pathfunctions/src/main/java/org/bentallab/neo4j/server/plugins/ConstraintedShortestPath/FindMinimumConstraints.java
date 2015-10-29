@@ -19,6 +19,6 @@ public class FindMinimumConstraints  extends ServerPlugin {
             @Description("An object of given constraints")
             @Parameter(name = "constraints") final Map constraints
     ){
-
+        return "";
     };
 }

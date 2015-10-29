@@ -26,26 +26,34 @@ public class ConstraintedShortestPathPlugin  extends ServerPlugin {
             @Description( "The maximum path length to search for, default value (if omitted) is 4." )
             @Parameter( name = "depth", optional = true ) Integer depth,
             @Description("An object of given constraints")
-            @Parameter(name = "constraints") final Map constraints,
+            @Parameter(name = "constraints", optional = true ) final Map constraints,
             @Description("Default weight of relationships the don't match the set of supplied constraints")
-            @Parameter(name = "defaultValue", optional = true) Double defaultValue){
+            @Parameter(name = "defaultValue", optional = true ) Double defaultValue) throws Exception {
         PathExpander<?> expander;
         List<Path> paths = new ArrayList<Path>();
         List<PropertyContainer> containers = new ArrayList<PropertyContainer>();
-        if ( types == null )
-        {
-            expander = PathExpanders.allTypesAndDirections();
-        }
-        else
-        {
-            PathExpanderBuilder expanderBuilder = PathExpanderBuilder.empty();
-            for ( int i = 0; i < types.length; i++ )
+        if ( constraints == null ) {
+            if ( types == null )
             {
-                expanderBuilder = expanderBuilder.add( DynamicRelationshipType.withName( types[i] ) );
+                expander = PathExpanders.allTypesAndDirections();
             }
-            expander = expanderBuilder.build();
+            else
+            {
+                PathExpanderBuilder expanderBuilder = PathExpanderBuilder.empty();
+                for ( int i = 0; i < types.length; i++ )
+                {
+                    expanderBuilder = expanderBuilder.add( DynamicRelationshipType.withName( types[i] ) );
+                }
+                expander = expanderBuilder.build();
+            }
+        } else {
+            if (types != null && types.length == 1 ) {
+                expander = UnderConstraintsExpanderProvider.underConstraintsExpander(DynamicRelationshipType.withName( types[0] ), constraints);
+            } else {
+                throw new Exception("AAAAAAAAA you did something very wrong!");
+            }
         }
-        defaultValue = (null == defaultValue) ? Double.POSITIVE_INFINITY : defaultValue.doubleValue();
+/*        defaultValue = (null == defaultValue) ? Double.POSITIVE_INFINITY : defaultValue.doubleValue();
         CostEvaluator<Double> costEvaluator = new RelationshipFilter(constraints, defaultValue);
         try {
             Transaction tx = source.getGraphDatabase().beginTx();
@@ -57,7 +65,14 @@ public class ConstraintedShortestPathPlugin  extends ServerPlugin {
             tx.success();
         } catch (Exception e) {
 
+        }*/
+        Transaction tx = source.getGraphDatabase().beginTx();
+        PathFinder<Path> shortestPath = GraphAlgoFactory.shortestPath(expander, depth);
+        for ( Path path : shortestPath.findAllPaths( source, target ) )
+        {
+            paths.add( path );
         }
+        tx.success();
         return paths;
     };
 }
